@@ -1,0 +1,43 @@
+{
+  "name": "vscode-audio-browser",
+  "displayName": "Audio Browser",
+  "description": "Play audio files directly in the VS Code editor. Click any .m4a, .mp3, .wav, .ogg, or .flac in the Explorer to open an inline player.",
+  "version": "0.1.0",
+  "publisher": "mandipgosal",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "keywords": ["audio", "player", "m4a", "mp3", "wav"],
+  "activationEvents": [
+    "onCustomEditor:audioBrowser.player"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "audioBrowser.player",
+        "displayName": "Audio Player",
+        "selector": [
+          { "filenamePattern": "*.m4a" },
+          { "filenamePattern": "*.mp3" },
+          { "filenamePattern": "*.wav" },
+          { "filenamePattern": "*.ogg" },
+          { "filenamePattern": "*.flac" }
+        ],
+        "priority": "default"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "vscode:prepublish": "node esbuild.js --minify"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.3.0"
+  }
+}
