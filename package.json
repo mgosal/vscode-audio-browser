@@ -1,16 +1,18 @@
 {
   "name": "vscode-audio-browser",
   "displayName": "Audio Browser",
-  "description": "Play audio files directly in the VS Code editor. Click any .m4a, .mp3, .wav, .ogg, or .flac in the Explorer to open an inline player.",
-  "version": "0.1.0",
+  "description": "Play audio files directly in the VS Code editor. Includes a folder browser panel with Explorer sync.",
+  "version": "0.2.0-dev",
   "publisher": "mandipgosal",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": ["Other"],
-  "keywords": ["audio", "player", "m4a", "mp3", "wav"],
+  "keywords": ["audio", "player", "m4a", "mp3", "wav", "explorer", "folder"],
   "activationEvents": [
-    "onCustomEditor:audioBrowser.player"
+    "onCustomEditor:audioBrowser.player",
+    "onCommand:audioBrowser.openExplorer",
+    "onCommand:audioBrowser.browseFolder"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -27,7 +29,37 @@
         ],
         "priority": "default"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "audioBrowser.openExplorer",
+        "title": "Open Folder Explorer",
+        "category": "Audio Browser"
+      },
+      {
+        "command": "audioBrowser.browseFolder",
+        "title": "Browse Folder",
+        "category": "Audio Browser"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "audioBrowser.browseFolder",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation@99"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "audioBrowser.openExplorer"
+        },
+        {
+          "command": "audioBrowser.browseFolder",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    }
   },
   "scripts": {
     "compile": "node esbuild.js",
