@@ -13,7 +13,24 @@ class AudioDocument implements vscode.CustomDocument {
 export class AudioPlayerEditorProvider
   implements vscode.CustomReadonlyEditorProvider<AudioDocument>
 {
-  // ── CustomReadonlyEditorProvider ─────────────────────────────────────────
+  private static readonly SEEK_KEY = 'audioBrowser.seekPositions';
+
+  constructor(private readonly _context: vscode.ExtensionContext) {}
+
+  private _getSeek(filePath: string): number {
+    const all = this._context.workspaceState.get<Record<string, number>>(
+      AudioPlayerEditorProvider.SEEK_KEY, {}
+    );
+    return all[filePath] ?? 0;
+  }
+
+  private _setSeek(filePath: string, time: number): void {
+    const all = this._context.workspaceState.get<Record<string, number>>(
+      AudioPlayerEditorProvider.SEEK_KEY, {}
+    );
+    all[filePath] = time;
+    this._context.workspaceState.update(AudioPlayerEditorProvider.SEEK_KEY, all);
+  }
 
   openCustomDocument(
     uri: vscode.Uri,
@@ -32,17 +49,25 @@ export class AudioPlayerEditorProvider
     const filename = path.basename(document.uri.fsPath);
     const ext = path.extname(filename).toLowerCase().slice(1);
     const mimeType = mimeFor(ext);
+    const filePath = document.uri.fsPath;
 
     webviewPanel.webview.options = {
       enableScripts: true,
       localResourceRoots: [fileDir],
     };
 
-    // Convert the on-disk path to a URI the webview sandbox can load
     const srcUri = webviewPanel.webview.asWebviewUri(document.uri);
+    const savedTime = this._getSeek(filePath);
 
-    webviewPanel.webview.html = buildPlayerHtml(filename, srcUri, mimeType);
+    webviewPanel.webview.html = buildPlayerHtml(filename, srcUri, mimeType, savedTime);
     webviewPanel.title = filename;
+
+    // Listen for seek position updates from the webview
+    webviewPanel.webview.onDidReceiveMessage((msg: { type: string; time?: number }) => {
+      if (msg.type === 'seek' && typeof msg.time === 'number') {
+        this._setSeek(filePath, msg.time);
+      }
+    });
   }
 }
 
@@ -62,34 +87,27 @@ function mimeFor(ext: string): string {
 function buildPlayerHtml(
   filename: string,
   srcUri: vscode.Uri,
-  mimeType: string
+  mimeType: string,
+  startTime: number
 ): string {
-  // Escape for safe HTML attribute injection
   const safeSrc = srcUri.toString();
   const safeFilename = filename
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+  const mediaOrigin = srcUri.toString().split('/').slice(0, 3).join('/');
 
-  return /* html */ `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta
-    http-equiv="Content-Security-Policy"
-    content="default-src 'none'; media-src ${srcUri.toString().split('/').slice(0, 3).join('/')} vscode-resource:; style-src 'unsafe-inline';"
-  />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'none'; media-src ${mediaOrigin} vscode-resource:; style-src 'unsafe-inline'; script-src 'unsafe-inline';" />
   <title>${safeFilename}</title>
   <style>
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       display: flex;
@@ -117,11 +135,7 @@ function buildPlayerHtml(
       border: 1px solid var(--vscode-panel-border, rgba(255,255,255,0.1));
     }
 
-    .icon {
-      font-size: 3rem;
-      line-height: 1;
-      user-select: none;
-    }
+    .icon { font-size: 3rem; line-height: 1; user-select: none; }
 
     .filename {
       font-size: 1rem;
@@ -148,18 +162,46 @@ function buildPlayerHtml(
 </head>
 <body>
   <div class="card">
-    <div class="icon">🎵</div>
+    <div class="icon">\u{1F3B5}</div>
     <div class="filename">${safeFilename}</div>
-    <audio
-      id="player"
-      controls
-      autoplay
-    >
+    <audio id="player" controls autoplay>
       <source src="${safeSrc}" type="${mimeType}" />
       <p>Your browser does not support this audio format.</p>
     </audio>
     <p class="hint">Use the controls above to play, pause, and seek.</p>
   </div>
+
+  <script>
+    (function () {
+      var vsc   = acquireVsCodeApi();
+      var audio = document.getElementById('player');
+      var startTime = ${startTime};
+
+      // Restore saved seek position once audio metadata is loaded
+      if (startTime > 0) {
+        audio.addEventListener('loadedmetadata', function () {
+          audio.currentTime = startTime;
+        }, { once: true });
+      }
+
+      // Report position back to extension host for persistence
+      function report() {
+        vsc.postMessage({ type: 'seek', time: audio.currentTime });
+      }
+
+      audio.addEventListener('pause', report);
+      audio.addEventListener('seeked', report);
+      // Throttled timeupdate — save every ~2 seconds during playback
+      var last = 0;
+      audio.addEventListener('timeupdate', function () {
+        var now = Date.now();
+        if (now - last > 2000) {
+          last = now;
+          report();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>`;
 }

@@ -69,7 +69,6 @@ export class FolderBrowserProvider {
     const instance = FolderBrowserProvider.getInstance(context);
     if (folderUri) {
       instance._currentPath = folderUri.fsPath;
-      instance._syncEnabled = false;
     }
     instance._show();
   }
@@ -112,9 +111,9 @@ export class FolderBrowserProvider {
       const current = await vscode.env.clipboard.readText();
       await vscode.env.clipboard.writeText(saved);
 
-      if (!current || current === saved || current === this._lastPolledPath) {
-        return;
-      }
+      // Skip if clipboard didn't change (Explorer didn't have focus)
+      // or if we already navigated to this path
+      if (!current || current === this._lastPolledPath) { return; }
       if (!path.isAbsolute(current)) { return; }
 
       let stat: fs.Stats;
@@ -129,6 +128,17 @@ export class FolderBrowserProvider {
     } catch { /* transient failures are harmless in a poll loop */ }
   }
 
+  /** Called by extension.ts when the active editor changes */
+  onActiveEditorChanged(editor: vscode.TextEditor | undefined): void {
+    if (!this._syncEnabled || !this._panel || !editor) { return; }
+    if (editor.document.uri.scheme !== 'file') { return; }
+    const parentDir = path.dirname(editor.document.uri.fsPath);
+    if (parentDir !== this._currentPath) {
+      this._lastPolledPath = parentDir;
+      this._navigate(parentDir);
+    }
+  }
+
   // ── Panel lifecycle ───────────────────────────────────────────────────────
   private _show(): void {
     if (this._panel) {
@@ -140,7 +150,7 @@ export class FolderBrowserProvider {
     this._panel = vscode.window.createWebviewPanel(
       'audioBrowser.explorer',
       'Folder Browser',
-      { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
+      { viewColumn: vscode.ViewColumn.Active, preserveFocus: false },
       { enableScripts: true, retainContextWhenHidden: true }
     );
 
@@ -154,14 +164,12 @@ export class FolderBrowserProvider {
             break;
           case 'openFolder':
             if (msg.path) {
-              this._syncEnabled = false;
               this._navigate(msg.path);
             }
             break;
           case 'goUp': {
             const parent = path.dirname(this._currentPath);
             if (parent !== this._currentPath) {
-              this._syncEnabled = false;
               this._navigate(parent);
             }
             break;

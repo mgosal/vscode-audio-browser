@@ -7,7 +7,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.window.registerCustomEditorProvider(
       'audioBrowser.player',
-      new AudioPlayerEditorProvider(),
+      new AudioPlayerEditorProvider(context),
       {
         supportsMultipleEditorsPerDocument: true,
         webviewOptions: { retainContextWhenHidden: true },
@@ -33,6 +33,13 @@ export function activate(context: vscode.ExtensionContext): void {
         if (target) { FolderBrowserProvider.open(context, target); }
       }
     )
+  );
+  // Sync folder browser when the active editor changes (file clicks in Explorer)
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(editor => {
+      const instance = FolderBrowserProvider.getInstance(context);
+      instance.onActiveEditorChanged(editor);
+    })
   );
 }
 
