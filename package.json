@@ -1,14 +1,46 @@
 {
   "name": "vscode-audio-browser",
   "displayName": "Audio Browser",
-  "description": "Play audio files directly in the VS Code editor. Click any .m4a, .mp3, .wav, .ogg, or .flac in the Explorer to open an inline player.",
+  "description": "Open local audio files in VS Code with an inline player custom editor.",
   "version": "0.1.0",
   "publisher": "mandipgosal",
+  "author": {
+    "name": "Mandip Gosal"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mgosal/vscode-audio-browser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mgosal/vscode-audio-browser/issues"
+  },
+  "homepage": "https://github.com/mgosal/vscode-audio-browser#readme",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#0f766e",
+    "theme": "dark"
+  },
+  "pricing": "Free",
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
-  "keywords": ["audio", "player", "m4a", "mp3", "wav"],
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "keywords": [
+    "audio",
+    "player",
+    "m4a",
+    "mp3",
+    "wav",
+    "ogg",
+    "flac",
+    "music",
+    "voice-notes",
+    "custom-editor"
+  ],
   "activationEvents": [
     "onCustomEditor:audioBrowser.player"
   ],

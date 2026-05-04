@@ -34,14 +34,19 @@ export class AudioPlayerEditorProvider
     const mimeType = mimeFor(ext);
 
     webviewPanel.webview.options = {
-      enableScripts: true,
+      enableScripts: false,
       localResourceRoots: [fileDir],
     };
 
     // Convert the on-disk path to a URI the webview sandbox can load
     const srcUri = webviewPanel.webview.asWebviewUri(document.uri);
 
-    webviewPanel.webview.html = buildPlayerHtml(filename, srcUri, mimeType);
+    webviewPanel.webview.html = buildPlayerHtml(
+      filename,
+      srcUri,
+      mimeType,
+      webviewPanel.webview.cspSource
+    );
     webviewPanel.title = filename;
   }
 }
@@ -62,15 +67,12 @@ function mimeFor(ext: string): string {
 function buildPlayerHtml(
   filename: string,
   srcUri: vscode.Uri,
-  mimeType: string
+  mimeType: string,
+  cspSource: string
 ): string {
-  // Escape for safe HTML attribute injection
-  const safeSrc = srcUri.toString();
-  const safeFilename = filename
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  const safeSrc = escapeHtml(srcUri.toString());
+  const safeFilename = escapeHtml(filename);
+  const safeMimeType = escapeHtml(mimeType);
 
   return /* html */ `<!DOCTYPE html>
 <html lang="en">
@@ -79,7 +81,7 @@ function buildPlayerHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'none'; media-src ${srcUri.toString().split('/').slice(0, 3).join('/')} vscode-resource:; style-src 'unsafe-inline';"
+    content="default-src 'none'; media-src ${cspSource}; style-src 'unsafe-inline';"
   />
   <title>${safeFilename}</title>
   <style>
@@ -155,11 +157,20 @@ function buildPlayerHtml(
       controls
       autoplay
     >
-      <source src="${safeSrc}" type="${mimeType}" />
+      <source src="${safeSrc}" type="${safeMimeType}" />
       <p>Your browser does not support this audio format.</p>
     </audio>
     <p class="hint">Use the controls above to play, pause, and seek.</p>
   </div>
 </body>
 </html>`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
