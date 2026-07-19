@@ -59,7 +59,10 @@ function mimeFor(ext: string): string {
     mp3: 'audio/mpeg',
     wav: 'audio/wav',
     ogg: 'audio/ogg',
+    oga: 'audio/ogg',
+    opus: 'audio/ogg',
     flac: 'audio/flac',
+    aac: 'audio/aac',
   };
   return map[ext] ?? 'audio/mpeg';
 }
