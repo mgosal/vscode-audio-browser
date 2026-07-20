@@ -29,5 +29,8 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=moderate
 
+      - name: Type-check
+        run: npm run typecheck
+
       - name: Compile
         run: npm run compile

@@ -2,7 +2,7 @@
   "name": "vscode-audio-browser",
   "displayName": "Audio Browser",
   "description": "Open local audio files in VS Code with an inline player custom editor.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "mandipgosal",
   "author": {
     "name": "Mandip Gosal"
@@ -36,7 +36,9 @@
     "mp3",
     "wav",
     "ogg",
+    "opus",
     "flac",
+    "aac",
     "music",
     "voice-notes",
     "custom-editor"
@@ -55,7 +57,10 @@
           { "filenamePattern": "*.mp3" },
           { "filenamePattern": "*.wav" },
           { "filenamePattern": "*.ogg" },
-          { "filenamePattern": "*.flac" }
+          { "filenamePattern": "*.oga" },
+          { "filenamePattern": "*.opus" },
+          { "filenamePattern": "*.flac" },
+          { "filenamePattern": "*.aac" }
         ],
         "priority": "default"
       }
@@ -64,7 +69,8 @@
   "scripts": {
     "compile": "node esbuild.js",
     "watch": "node esbuild.js --watch",
-    "vscode:prepublish": "node esbuild.js --minify"
+    "typecheck": "tsc --noEmit",
+    "vscode:prepublish": "npm run typecheck && node esbuild.js --minify"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

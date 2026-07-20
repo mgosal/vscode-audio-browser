@@ -6,7 +6,7 @@ Open a supported audio file from the VS Code Explorer and the extension renders 
 
 ## Features
 
-- Opens `.m4a`, `.mp3`, `.wav`, `.ogg`, and `.flac` files with a custom editor.
+- Opens `.m4a`, `.mp3`, `.wav`, `.ogg`, `.oga`, `.opus`, `.flac`, and `.aac` files with a custom editor.
 - Uses VS Code's webview sandbox and native HTML5 audio controls.
 - Keeps audio playback in the editor area instead of launching an external media player.
 - Supports multiple audio editor tabs.
